@@ -24,9 +24,18 @@ pip install -r requirements.txt
 
 ### 2. Set your Gemini API key
 
+**Windows (recommended):**
+Set it as a user environment variable so it persists across sessions:
+> System Properties → Environment Variables → User Variables → New
+> - Variable name: `GEMINI_API_KEY`
+> - Variable value: `your_key_here`
+
+**macOS/Linux:**
 ```bash
 export GEMINI_API_KEY=your_key_here
 ```
+
+> The key is automatically available to any terminal or app you open. No need to set it every session. If running on a new machine, repeat this step.
 
 ### 3. Start the backend
 
