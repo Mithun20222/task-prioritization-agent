@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9f8f6;
+      --surface: #ffffff;
+      --border: #e8e5e0;
+      --text: #1a1a18;
+      --muted: #8a8880;
+      --urgent: #c0392b;
+      --important: #2563eb;
+      --low: #16a34a;
+      --urgent-bg: #fef2f2;
+      --important-bg: #eff6ff;
+      --low-bg: #f0fdf4;
+      --accent: #1a1a18;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px 40px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 52px;
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-sub {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 0.3px;
+    }
+
+    .exit-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .exit-btn:hover {
+      color: var(--urgent);
+      border-color: var(--urgent);
+      background: var(--urgent-bg);
+    }
+
+    main {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    textarea {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+      min-height: 100px;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); font-weight: 300; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-clear {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clear:hover { color: var(--text); border-color: #ccc; }
+
+    .btn-run {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-run:hover { opacity: 0.8; }
+    .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+
+    .btn-run.loading .spinner { display: block; }
+    .btn-run.loading .btn-label { opacity: 0.6; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+
+    .results-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .results-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: box-shadow 0.15s ease;
+    }
+
+    .task-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+
+    .task-index {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 20px;
+    }
+
+    .task-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+    .task-name {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .task-time {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .task-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .badge-URGENT    { color: var(--urgent);    background: var(--urgent-bg);    }
+    .badge-IMPORTANT { color: var(--important); background: var(--important-bg); }
+    .badge-LOW       { color: var(--low);       background: var(--low-bg);       }
+
+    .error-box {
+      background: var(--urgent-bg);
+      border: 1px solid #fca5a5;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: var(--urgent);
+      font-weight: 400;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 300;
+    }
+
+    /* Exit overlay */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.show { display: flex; }
+
+    .dialog {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      max-width: 340px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .dialog h2 { font-size: 16px; font-weight: 500; }
+    .dialog p  { font-size: 14px; color: var(--muted); font-weight: 300; line-height: 1.5; }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-exit-confirm {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--urgent);
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-exit-confirm:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <span class="logo-title">task agent</span>
+      <span class="logo-sub">gemini-powered task prioritizer</span>
+    </div>
+    <button class="exit-btn" onclick="showExitDialog()">⏻ exit</button>
+  </header>
+
+  <main>
+    <div class="input-card">
+      <label for="task-input">What do you need to get done?</label>
+      <textarea
+        id="task-input"
+        placeholder="e.g. Buy groceries, finish the quarterly report, call mom, and fix that urgent bug before standup"
+        rows="4"
+      ></textarea>
+      <div class="actions">
+        <button class="btn-clear" onclick="clearAll()">Clear</button>
+        <button class="btn-run" id="run-btn" onclick="runAgent()">
+          <div class="spinner"></div>
+          <span class="btn-label">Run Agent</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="results-container"></div>
+  </main>
+
+  <!-- Exit confirmation dialog -->
+  <div class="overlay" id="exit-overlay">
+    <div class="dialog">
+      <h2>Exit Task Agent?</h2>
+      <p>Any unsaved results will be lost. Are you sure you want to close the app?</p>
+      <div class="dialog-actions">
+        <button class="btn-cancel" onclick="hideExitDialog()">Cancel</button>
+        <button class="btn-exit-confirm" onclick="exitApp()">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    async function runAgent() {
+      const input = document.getElementById("task-input").value.trim();
+      if (!input) return;
+
+      const btn = document.getElementById("run-btn");
+      btn.classList.add("loading");
+      btn.disabled = true;
+
+      const container = document.getElementById("results-container");
+      container.innerHTML = "";
+
+      try {
+        const res = await fetch(`${API_BASE}/process`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_input: input }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Server error");
+        }
+
+        const data = await res.json();
+        renderResults(data.tasks);
+      } catch (err) {
+        container.innerHTML = `<div class="error-box">⚠ ${err.message}</div>`;
+      } finally {
+        btn.classList.remove("loading");
+        btn.disabled = false;
+      }
+    }
+
+    function renderResults(tasks) {
+      const container = document.getElementById("results-container");
+      if (!tasks || tasks.length === 0) {
+        container.innerHTML = `<div class="empty-state">No tasks found. Try rephrasing your input.</div>`;
+        return;
+      }
+
+      const html = `
+        <div class="results-section">
+          <div class="results-header">
+            <span class="results-label">Sorted Tasks</span>
+            <span class="results-count">${tasks.length} task${tasks.length !== 1 ? "s" : ""}</span>
+          </div>
+          ${tasks.map((t, i) => `
+            <div class="task-card">
+              <span class="task-index">${String(i + 1).padStart(2, "0")}</span>
+              <div class="task-content">
+                <span class="task-name">${escapeHtml(t.task)}</span>
+                <span class="task-time">${t.time}</span>
+              </div>
+              <span class="task-badge badge-${t.priority}">${t.priority}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      container.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function clearAll() {
+      document.getElementById("task-input").value = "";
+      document.getElementById("results-container").innerHTML = "";
+    }
+
+    function showExitDialog() {
+      document.getElementById("exit-overlay").classList.add("show");
+    }
+
+    function hideExitDialog() {
+      document.getElementById("exit-overlay").classList.remove("show");
+    }
+
+    function exitApp() {
+      window.close();
+      // Fallback: navigate away if window.close() is blocked
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:'DM Sans',sans-serif;color:#8a8880;font-size:14px;font-weight:300;">
+          Session ended. You may close this tab.
+        </div>`;
+    }
+
+    // Allow Ctrl+Enter to submit
+    document.getElementById("task-input").addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runAgent();
+    });
+
+    // Close dialog on overlay click
+    document.getElementById("exit-overlay").addEventListener("click", e => {
+      if (e.target === e.currentTarget) hideExitDialog();
+    });
+  </script>
+</body>
+</html>
